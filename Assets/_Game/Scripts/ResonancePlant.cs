@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace SeedGame
@@ -10,23 +11,126 @@ namespace SeedGame
         public bool generatePlaceholderSteps;
         public bool oneWayPlatforms;
         public Vector4[] placeholderSteps;
+        public float[] stepColliderWidths;
+        public Sprite[] plantFrames;
+        public Sprite[] stepFramesA;
+        public Sprite[] stepFramesB;
+        public Sprite[] stepFramesC;
+        public SpriteRenderer[] stepArtRenderers;
+        public float stepArtGroundY;
+        public Sprite[] bridgeFrames;
+        public SpriteRenderer bridgeRenderer;
+        public bool bridgeGrowsFromRight;
+        public bool keepDormantAsRoot;
+        public float growthFrameSeconds = .14f;
         static Sprite placeholderSprite;
         static Texture2D placeholderTexture;
         public void Activate()
         {
             if (isActive) return;
             isActive = true;
-            if (dormantVisual) dormantVisual.SetActive(false);
             if (oneWayPlatforms && grownRoot)
                 foreach (var collider in grownRoot.GetComponentsInChildren<Collider2D>(true))
                     MakeOneWay(collider);
             if (generatePlaceholderSteps && placeholderSteps != null && placeholderSteps.Length > 0)
-                GenerateSteps();
+            {
+                if (stepFramesA != null && stepFramesA.Length > 0)
+                    StartCoroutine(GrowLeafSteps());
+                else
+                {
+                    if (dormantVisual) dormantVisual.SetActive(false);
+                    GeneratePlaceholderSteps();
+                }
+            }
+            else if (bridgeRenderer && bridgeFrames != null && bridgeFrames.Length > 0)
+                StartCoroutine(GrowBridge());
             else if (grownRoot)
+            {
+                if (dormantVisual) dormantVisual.SetActive(false);
                 grownRoot.SetActive(true);
+            }
             Debug.Log("Resonance activated: " + name);
         }
-        void GenerateSteps()
+
+        IEnumerator GrowLeafSteps()
+        {
+            bool hasPlacedArt = stepArtRenderers != null && stepArtRenderers.Length >= placeholderSteps.Length;
+            var bud = !hasPlacedArt && dormantVisual ? dormantVisual.GetComponent<SpriteRenderer>() : null;
+            if (bud && plantFrames != null)
+                foreach (var frame in plantFrames)
+                {
+                    if (frame) bud.sprite = frame;
+                    yield return new WaitForSeconds(growthFrameSeconds);
+                }
+
+            for (int i = 0; i < placeholderSteps.Length; i++)
+            {
+                Vector4 step = placeholderSteps[i];
+                Sprite[] frames = i == 0 ? stepFramesA : i == 1 ? stepFramesB : stepFramesC;
+                if (frames == null || frames.Length == 0) frames = stepFramesA;
+                Sprite final = frames[frames.Length - 1];
+                if (!final) continue;
+
+                var platform = new GameObject("Resonance leaf step " + (i + 1));
+                platform.transform.SetParent(transform);
+                platform.transform.position = new Vector3(step.x, step.y, 0);
+                platform.layer = 6;
+                SpriteRenderer renderer = hasPlacedArt ? stepArtRenderers[i] : null;
+                if (!renderer)
+                {
+                    var newArt = new GameObject("Leaf artwork");
+                    renderer = newArt.AddComponent<SpriteRenderer>();
+                    newArt.transform.position = platform.transform.position;
+                }
+                float startingY = renderer.transform.position.y - step.y;
+                renderer.transform.SetParent(platform.transform, true);
+                renderer.sortingOrder = 6;
+                float scale = step.z * 1.12f / final.bounds.size.x;
+                renderer.transform.localScale = new Vector3(scale, scale, 1f);
+                for (int frameIndex = 0; frameIndex < frames.Length; frameIndex++)
+                {
+                    var frame = frames[frameIndex];
+                    if (!frame) continue;
+                    renderer.sprite = frame;
+                    float progress = (frameIndex + 1f) / frames.Length;
+                    float grownY = stepArtGroundY - step.y + frame.bounds.size.y * scale * .5f;
+                    renderer.transform.localPosition = new Vector3(0, Mathf.Lerp(startingY, grownY, progress), 0);
+                    yield return new WaitForSeconds(growthFrameSeconds);
+                }
+                var collider = platform.AddComponent<BoxCollider2D>();
+                collider.size = new Vector2(ColliderWidth(i, step.z), step.w);
+                if (oneWayPlatforms) MakeOneWay(collider);
+            }
+        }
+
+        IEnumerator GrowBridge()
+        {
+            if (dormantVisual && !keepDormantAsRoot) dormantVisual.SetActive(false);
+            grownRoot.SetActive(true);
+            var collider = bridgeRenderer.GetComponent<Collider2D>();
+            if (collider) collider.enabled = false;
+            Vector3 center = bridgeRenderer.transform.position;
+            Sprite final = bridgeFrames[bridgeFrames.Length - 1];
+            float finalWidth = final.bounds.size.x * Mathf.Abs(bridgeRenderer.transform.lossyScale.x);
+            float finalHeight = final.bounds.size.y * Mathf.Abs(bridgeRenderer.transform.lossyScale.y);
+            foreach (var frame in bridgeFrames)
+            {
+                if (!frame) continue;
+                bridgeRenderer.sprite = frame;
+                float width = frame.bounds.size.x * Mathf.Abs(bridgeRenderer.transform.lossyScale.x);
+                float height = frame.bounds.size.y * Mathf.Abs(bridgeRenderer.transform.lossyScale.y);
+                float direction = bridgeGrowsFromRight ? 1f : -1f;
+                bridgeRenderer.transform.position = center + new Vector3(
+                    direction * (finalWidth - width) * .5f,
+                    -(finalHeight - height) * .5f, 0);
+                yield return new WaitForSeconds(growthFrameSeconds);
+            }
+            bridgeRenderer.sprite = final;
+            bridgeRenderer.transform.position = center;
+            if (collider) collider.enabled = true;
+        }
+
+        void GeneratePlaceholderSteps()
         {
             if (!placeholderSprite)
             {
@@ -36,8 +140,9 @@ namespace SeedGame
                 placeholderSprite = Sprite.Create(placeholderTexture,
                     new Rect(0, 0, 1, 1), new Vector2(.5f, .5f), 1);
             }
-            foreach (var step in placeholderSteps)
+            for (int i = 0; i < placeholderSteps.Length; i++)
             {
+                var step = placeholderSteps[i];
                 var go = new GameObject("Resonance leaf step");
                 go.transform.SetParent(transform);
                 go.transform.position = new Vector3(step.x, step.y, 0);
@@ -48,10 +153,13 @@ namespace SeedGame
                 sprite.color = new Color(.69f, .9f, .48f);
                 sprite.sortingOrder = 6;
                 var collider = go.AddComponent<BoxCollider2D>();
-                collider.size = Vector2.one;
+                collider.size = new Vector2(ColliderWidth(i, step.z) / step.z, 1);
                 if (oneWayPlatforms) MakeOneWay(collider);
             }
         }
+        float ColliderWidth(int index, float artworkWidth) =>
+            stepColliderWidths != null && index < stepColliderWidths.Length && stepColliderWidths[index] > 0
+                ? stepColliderWidths[index] : artworkWidth;
         static void MakeOneWay(Collider2D collider)
         {
             var effector = collider.GetComponent<PlatformEffector2D>();

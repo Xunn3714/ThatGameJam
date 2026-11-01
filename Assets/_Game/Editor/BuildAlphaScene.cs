@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using SeedGame;
 
 public static class BuildAlphaScene
 {
@@ -16,10 +17,14 @@ public static class BuildAlphaScene
         var character = AssetDatabase.LoadAssetAtPath<Sprite>(root + "/Art/Character/主角形象草稿.PNG");
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         AlphaSceneFactory.Build(square, character);
+        Level01TransitionSetup.Install();
         var path = root + "/Scenes/Level01_Alpha.unity";
         Directory.CreateDirectory(root + "/Scenes");
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene(), path);
-        EditorBuildSettings.scenes = new [] { new EditorBuildSettingsScene(path, true) };
+        var secondPath = root + "/Scenes/Level02_Alpha.unity";
+        EditorBuildSettings.scenes = File.Exists(secondPath)
+            ? new [] { new EditorBuildSettingsScene(path, true), new EditorBuildSettingsScene(secondPath, true) }
+            : new [] { new EditorBuildSettingsScene(path, true) };
         AssetDatabase.SaveAssets();
         Debug.Log("Seed alpha scene built: " + path);
     }

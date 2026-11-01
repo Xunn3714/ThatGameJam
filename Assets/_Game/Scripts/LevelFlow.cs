@@ -10,7 +10,17 @@ namespace SeedGame
         public string completionMessage = "关卡完成！按 R 重新开始";
         bool finished;
         GUIStyle label;
-        void Awake() { Instance = this; }
+        void Awake()
+        {
+            Instance = this;
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level01_Alpha")
+                GearState.Reset();
+        }
+        void Start()
+        {
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level01_Alpha")
+                Level01TransitionSetup.Install();
+        }
         void Update()
         {
             if (!finished) return;

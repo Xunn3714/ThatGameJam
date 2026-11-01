@@ -15,14 +15,14 @@ public static class AlphaSceneFactory
         Camera.main.GetComponent<SeedCamera>().target = player.transform;
         Ground("Starting earth", 0, 25, -2.4f, 2.4f);
         Ground("After gap earth", 30, 47, -2.4f, 2.4f);
-        Solid("Jump tutorial stump", 8.0f, .45f, 1.15f, .9f, new Color(.28f,.27f,.34f));
-        Solid("Practice wall", 19.2f, .9f, 1.45f, 1.8f, new Color(.27f,.3f,.36f));
+        Solid("Jump tutorial stump", 8.0f, .4f, 1.15f, .8f, new Color(.28f,.27f,.34f));
+        Wall();
         var first = Plant("01 - climb vine", 13.7f, .18f, new [] {
-            new Vector4(15.1f,.65f,1.6f,.3f), new Vector4(16.7f,1.15f,1.6f,.3f),
-            new Vector4(18.3f,1.65f,1.6f,.3f), new Vector4(20f,2.25f,1.75f,.3f)
+            new Vector4(15.1f,.5f,1.6f,.2f), new Vector4(16.7f,1.35f,1.6f,.2f),
+            new Vector4(18.6f,1.75f,1.75f,.2f)
         });
-        var nearBridge = BridgeVine("02 - near-bank vine", 26f, .2f, 25.6f, 1.2f);
-        var farBridge = BridgeVine("03 - far-bank vine", 30.8f, .2f, 28.15f, 3.9f);
+        var nearBridge = BridgeVine("02 - near-bank vine", 24.5f, .2f, 25.4f, 1.2f);
+        var farBridge = BridgeVine("03 - far-bank vine", 30.6f, .2f, 28.05f, 4.1f);
         Trigger<Checkpoint>("Checkpoint before bridge", 22.3f, 1.2f, 1.4f, 2.4f);
         Trigger<Checkpoint>("Checkpoint after bridge", 32.1f, 1.2f, 1.4f, 2.4f);
         Decorative("Distant mother tree", 1.5f, 5.3f, 3f, 10f, new Color(.38f,.37f,.52f,.5f), -15);
@@ -33,6 +33,7 @@ public static class AlphaSceneFactory
         var flow = new GameObject("Reusable level completion").AddComponent<LevelFlow>();
         flow.player = player; flow.completionMessage = "第一关 Alpha 完成！按 R 重新开始";
         player.plants = new [] { first, nearBridge, farBridge };
+        Level01ArtFactory.Apply(group, player);
     }
     static void CameraAndBackdrop()
     {
@@ -41,7 +42,7 @@ public static class AlphaSceneFactory
         c.backgroundColor = new Color(.37f,.36f,.58f);
         go.AddComponent<AudioListener>();
         var follow = go.AddComponent<SeedCamera>();
-        follow.minX = 0; follow.maxX = 47; follow.minY = -3; follow.maxY = 12;
+        follow.minX = 0; follow.maxX = 47; follow.minY = -1.6f; follow.maxY = 12;
         go.transform.position = new Vector3(2f, 2.1f, -10f);
         Decorative("Distant violet hills", 23.5f, 3.3f, 47, 7, new Color(.52f,.48f,.68f), -20);
         Decorative("Middle pale garden", 23.5f, 1.25f, 47, 4.2f, new Color(.66f,.59f,.69f), -18);
@@ -73,8 +74,10 @@ public static class AlphaSceneFactory
         var plant = root.AddComponent<ResonancePlant>();
         plant.generatePlaceholderSteps = true;
         plant.oneWayPlatforms = true;
+        plant.stepArtGroundY = -.08f;
+        plant.stepColliderWidths = new[] { 1.1f, 1.2f, 1.1f };
         plant.placeholderSteps = leaves;
-        var dormant = Decorative("Curled sleeping bud", x, y+.35f, .55f, .7f,
+        var dormant = Decorative("Sleeping plant A", x, y+.35f, .55f, .7f,
             new Color(.39f,.46f,.42f), 3);
         plant.dormantVisual = dormant;
         var grown = new GameObject("Grown platforms and leaves"); grown.transform.SetParent(root.transform);
@@ -97,8 +100,9 @@ public static class AlphaSceneFactory
     {
         var root = new GameObject(name); root.transform.position = new Vector3(x, y, 0);
         var plant = root.AddComponent<ResonancePlant>();
-        plant.dormantVisual = Decorative("Curled sleeping bridge vine", x, y + .35f,
+        plant.dormantVisual = Decorative(name.StartsWith("02") ? "Near-bank vine root" : "Far-bank vine root", x, y + .35f,
             .55f, .7f, new Color(.39f, .46f, .42f), 3);
+        plant.keepDormantAsRoot = true;
         var grown = new GameObject("Grown continuous vine bridge");
         grown.transform.SetParent(root.transform);
         plant.grownRoot = grown;
@@ -118,6 +122,17 @@ public static class AlphaSceneFactory
             new Color(.18f,.21f,.28f));
         Decorative(name+" top rim", (left+right)*.5f, bottom+height+.04f,
             right-left, .12f, new Color(.52f,.57f,.49f), 1);
+    }
+    static void Wall()
+    {
+        var go = Decorative("Practice wall", 20.65f, 0f, 1f, 1f, new Color(.27f,.3f,.36f), 0);
+        go.layer = 6;
+        var collider = go.AddComponent<PolygonCollider2D>();
+        collider.points = new[] {
+            new Vector2(-1.1f, 0f), new Vector2(-1.1f, 1.5f),
+            new Vector2(-.8f, 1.7f), new Vector2(-.62f, 1.65f),
+            new Vector2(.75f, .36f), new Vector2(1.1f, .1f), new Vector2(1.1f, 0f)
+        };
     }
     static GameObject Solid(string name, float x, float y, float w, float h, Color color)
     {
