@@ -25,4 +25,6 @@
 - 第二题：`Sleeping plant A/B/C` 调未共鸣时的位置；`01 - climb vine` 上的 ResonancePlant `placeholderSteps` 分别设置三片叶台的中心 X/Y、图片宽度 Z、碰撞厚度 W；`stepColliderWidths` 设置可站立宽度，`stepArtGroundY` 设置三株根部的埋入高度。叶台碰撞体会在 Play 时生成。
 - 第三题：`Near-bank vine root`、`Far-bank vine root` 调两端根部；`Continuous vine crossing`、`Continuous vine completion` 调桥面图片和 BoxCollider2D。改桥长时检查从近岸地面共鸣不到对岸，而站上第一段藤蔓后可以共鸣到。
 
-本机 Unity 批处理卡在授权初始化，未能执行 Play 模式。场景已离线写入并通过引用、碰撞与资源完整性检查；打开编辑器后应先确认 Console 无编译错误，再运行场景；如有差异，以实际试玩调整跳高、呼唤半径、平台距离和镜头边界。
+第二关可打开 `Assets/_Game/Scenes/Level02_Alpha.unity` 单独试玩，也可从第一关末尾的遗迹入口进入。单独试玩时预置前两枚齿轮；通过暗廊浅水、双柱葎草取得第 3 枚齿轮，再用酢浆草滑翔或蘑菇弹跳到出口高台，在门前连续按 E 三次让同一轮共鸣覆盖四株植物，开门后抵达终点。滑翔需要在下落时按住 Space。通关后按 R 重开第二关。`Seed > Build second level alpha` 可重建占位场景，会覆盖场景手工修改。
+
+Unity 6000.5.9f1 批处理已成功编译并重建第二关场景；尚未完成编辑器中的人工全流程试玩。几何、美术和交互提示仍是 Alpha 占位表现，实际跳距与镜头手感需要在 Game 视图中继续调整。

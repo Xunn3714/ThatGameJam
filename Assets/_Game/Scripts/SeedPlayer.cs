@@ -11,6 +11,9 @@ namespace SeedGame
         public float jumpSpeed = 10f;
         public float resonanceRadius = 5f;
         public float energyRechargeSeconds = 3f;
+        public float glideGravityScale = .05f;
+        public float glideMaxFallSpeed = 1.4f;
+        public bool hasGlideLeaf;
         public ResonancePlant[] plants;
         public LayerMask groundMask = 1 << 6;
         public Transform feet;
@@ -25,6 +28,7 @@ namespace SeedGame
         int maxEnergy;
         int energy;
         int pulseStage;
+        int pulseSerial;
         float nextRecharge;
         float pulseUntil;
         float visualRadius;
@@ -35,10 +39,14 @@ namespace SeedGame
         Material pulseMaterial;
         PhysicsMaterial2D contactMaterial;
         Coroutine pulseRoutine;
+        float normalGravity;
+        public int PulseSerial => pulseSerial;
+        public float PulseEndsAt => pulseUntil;
 
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
+            normalGravity = body.gravityScale;
             body.freezeRotation = true;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             // Repeated movement input presses the body into a wall. Zero friction lets it fall naturally.
@@ -119,6 +127,11 @@ namespace SeedGame
         void FixedUpdate()
         {
             if (!controlsEnabled) { body.linearVelocity = new Vector2(0, body.linearVelocity.y); return; }
+            bool glide = hasGlideLeaf && Keyboard.current != null && Keyboard.current.spaceKey.isPressed
+                && body.linearVelocity.y < 0f && !IsGrounded();
+            body.gravityScale = glide ? glideGravityScale : normalGravity;
+            if (glide && body.linearVelocity.y < -glideMaxFallSpeed)
+                body.linearVelocity = new Vector2(body.linearVelocity.x, -glideMaxFallSpeed);
             body.linearVelocity = new Vector2(horizontal * moveSpeed, body.linearVelocity.y);
             if (jumpQueued && IsGrounded()) body.linearVelocity = new Vector2(body.linearVelocity.x, jumpSpeed);
             jumpQueued = false;
@@ -135,6 +148,7 @@ namespace SeedGame
             else
             {
                 pulseStage = 1;
+                pulseSerial++;
                 pulseCenter = transform.position;
                 visualRadius = 0f;
             }
@@ -152,6 +166,12 @@ namespace SeedGame
                 {
                     plantsInRange++;
                     plant.Activate();
+                }
+            foreach (var target in FindObjectsByType<Level02ResonanceTarget>(FindObjectsSortMode.None))
+                if (target && Vector2.Distance(pulseCenter, target.transform.position) <= radius)
+                {
+                    plantsInRange++;
+                    target.OnResonance(this, pulseSerial);
                 }
             if (plantsInRange == 0)
                 Debug.Log("Resonance reached no plant at " + transform.position);

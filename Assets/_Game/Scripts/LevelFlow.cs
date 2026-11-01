@@ -13,8 +13,11 @@ namespace SeedGame
         void Awake()
         {
             Instance = this;
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level01_Alpha")
+            var sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (sceneName == "Level01_Alpha")
                 GearState.Reset();
+            else if (sceneName == "Level02_Alpha")
+                GearState.BeginSecondLevel();
         }
         void Start()
         {

@@ -7,6 +7,7 @@ namespace SeedGame
     {
         public string destinationScene;
         public int requiredGears;
+        public Level02Gate requiredGate;
         void OnTriggerEnter2D(Collider2D other)
         {
             if (!other.GetComponent<SeedPlayer>()) return;
@@ -15,6 +16,7 @@ namespace SeedGame
                 Debug.Log("Collect the gear before entering the ruins.");
                 return;
             }
+            if (requiredGate && !requiredGate.IsOpen) return;
             if (!string.IsNullOrEmpty(destinationScene)) SceneManager.LoadScene(destinationScene);
             else LevelFlow.Instance?.Finish();
         }
