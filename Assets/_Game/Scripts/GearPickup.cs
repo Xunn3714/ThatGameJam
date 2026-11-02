@@ -7,11 +7,25 @@ namespace SeedGame
     public sealed class GearPickup : MonoBehaviour
     {
         bool collected;
+        InteractableHighlight highlight;
+
+        void Awake()
+        {
+            var gear = Resources.Load<Sprite>("UI/Gear");
+            var sprite = GetComponent<SpriteRenderer>();
+            if (gear && sprite) { sprite.sprite = gear; sprite.color = Color.white; }
+            if (sprite)
+            {
+                highlight = gameObject.AddComponent<InteractableHighlight>();
+                highlight.Initialize(sprite, new Color(1f, .78f, .24f));
+            }
+        }
         void OnTriggerEnter2D(Collider2D other)
         {
             var player = other.GetComponent<SeedPlayer>();
             if (!player || collected) return;
             collected = true;
+            if (highlight) highlight.Hide();
             GetComponent<Collider2D>().enabled = false;
             StartCoroutine(CollectSequence(player));
         }
@@ -29,17 +43,18 @@ namespace SeedGame
             Vector3 startScale = transform.localScale;
             float elapsed = 0f;
             bool granted = false;
-            while (elapsed < 3.5f)
+            while (elapsed < 5f)
             {
                 elapsed += Time.deltaTime;
                 float focus = elapsed < .65f ? Mathf.SmoothStep(0f, 1f, elapsed / .65f)
-                    : elapsed > 2.8f ? Mathf.SmoothStep(1f, 0f, (elapsed - 2.8f) / .7f) : 1f;
+                    : elapsed > 4.3f ? Mathf.SmoothStep(1f, 0f, (elapsed - 4.3f) / .7f) : 1f;
                 if (camera) camera.SetGearFocus(focus);
                 if (!granted && elapsed >= 1.2f)
                 {
                     granted = true;
                     GearState.Collect();
                     player.ApplyGearCount(GearState.Count);
+                    player.ShowGearEnergy();
                     Debug.Log("Gear collected: " + GearState.Count + "/4");
                 }
                 var renderer = GetComponent<SpriteRenderer>();
@@ -55,6 +70,9 @@ namespace SeedGame
             }
             if (camera) camera.SetGearFocus(0f);
             body.constraints = oldConstraints;
+            body.WakeUp();
+            if (!Physics2D.OverlapCircle(player.feet.position, .13f, player.groundMask))
+                body.linearVelocity = new Vector2(0f, -.1f);
             player.controlsEnabled = oldControls;
             gameObject.SetActive(false);
         }

@@ -15,7 +15,7 @@ public static class AlphaSceneFactory
         Camera.main.GetComponent<SeedCamera>().target = player.transform;
         Ground("Starting earth", 0, 25, -2.4f, 2.4f);
         Ground("After gap earth", 30, 47, -2.4f, 2.4f);
-        Solid("Jump tutorial stump", 8.0f, .4f, 1.15f, .8f, new Color(.28f,.27f,.34f));
+        Solid("Jump tutorial stump", 8.0f, .32f, .95f, .64f, new Color(.28f,.27f,.34f));
         Wall();
         var first = Plant("01 - climb vine", 13.7f, .18f, new [] {
             new Vector4(15.1f,.5f,1.6f,.2f), new Vector4(16.7f,1.35f,1.6f,.2f),
@@ -43,6 +43,7 @@ public static class AlphaSceneFactory
         go.AddComponent<AudioListener>();
         var follow = go.AddComponent<SeedCamera>();
         follow.minX = 0; follow.maxX = 47; follow.minY = -1.6f; follow.maxY = 12;
+        follow.playSize = 4f;
         go.transform.position = new Vector3(2f, 2.1f, -10f);
         Decorative("Distant violet hills", 23.5f, 3.3f, 47, 7, new Color(.52f,.48f,.68f), -20);
         Decorative("Middle pale garden", 23.5f, 1.25f, 47, 4.2f, new Color(.66f,.59f,.69f), -18);
@@ -59,12 +60,21 @@ public static class AlphaSceneFactory
         var col = go.AddComponent<BoxCollider2D>(); col.size = new Vector2(.58f, 1.1f);
         var feet = new GameObject("Feet ground probe").transform; feet.SetParent(go.transform);
         feet.localPosition = new Vector3(0, -.59f, 0);
-        var art = new GameObject("Original character draft, no animation"); art.transform.SetParent(go.transform);
-        art.transform.localPosition = new Vector3(.146f, .107f, 0);
+        var art = new GameObject("Character walk animation"); art.transform.SetParent(go.transform);
+        art.transform.localPosition = new Vector3(.05f, .09f, 0);
+        art.transform.localScale = Vector3.one * .82f;
         var sr = art.AddComponent<SpriteRenderer>();
-        sr.sprite = character;
+        sr.sprite = Resources.Load<Sprite>("Character/Walk1") ?? character;
         sr.sortingOrder = 5;
         var player = go.AddComponent<SeedPlayer>(); player.feet = feet;
+        player.moveSpeed = 3.25f;
+        var animation = art.AddComponent<SeedCharacterAnimation>();
+        animation.player = player;
+        animation.frames = new[] {
+            Resources.Load<Sprite>("Character/Walk1"),
+            Resources.Load<Sprite>("Character/Walk2"),
+            Resources.Load<Sprite>("Character/Walk3")
+        };
         return player;
     }
 
@@ -129,9 +139,9 @@ public static class AlphaSceneFactory
         go.layer = 6;
         var collider = go.AddComponent<PolygonCollider2D>();
         collider.points = new[] {
-            new Vector2(-1.1f, 0f), new Vector2(-1.1f, 1.5f),
-            new Vector2(-.8f, 1.7f), new Vector2(-.62f, 1.65f),
-            new Vector2(.75f, .36f), new Vector2(1.1f, .1f), new Vector2(1.1f, 0f)
+            new Vector2(-1.4f, 0f), new Vector2(-1.4f, 2f),
+            new Vector2(-.95f, 2.15f), new Vector2(-.7f, 2.08f),
+            new Vector2(1.05f, .2f), new Vector2(1.4f, 0f)
         };
     }
     static GameObject Solid(string name, float x, float y, float w, float h, Color color)

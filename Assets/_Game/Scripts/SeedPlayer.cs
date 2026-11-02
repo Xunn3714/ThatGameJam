@@ -7,7 +7,7 @@ namespace SeedGame
     [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
     public sealed class SeedPlayer : MonoBehaviour
     {
-        public float moveSpeed = 3.8f;
+        public float moveSpeed = 3.4f;
         public float jumpSpeed = 10f;
         public float resonanceRadius = 5f;
         public float energyRechargeSeconds = 3f;
@@ -33,15 +33,16 @@ namespace SeedGame
         float pulseUntil;
         float visualRadius;
         Vector3 pulseCenter;
-        float newEnergyFlashUntil;
-        int newEnergySlot = -1;
         LineRenderer pulseRing;
         Material pulseMaterial;
         PhysicsMaterial2D contactMaterial;
         Coroutine pulseRoutine;
+        SeedWorldHud worldHud;
         float normalGravity;
         public int PulseSerial => pulseSerial;
         public float PulseEndsAt => pulseUntil;
+        public int Energy => energy;
+        public int MaxEnergy => maxEnergy;
 
         void Awake()
         {
@@ -88,16 +89,15 @@ namespace SeedGame
             ApplyGearCount(GearState.Count);
             if (plants == null || plants.Length == 0)
                 plants = FindObjectsByType<ResonancePlant>();
+            worldHud = GetComponent<SeedWorldHud>();
+            if (!worldHud) worldHud = gameObject.AddComponent<SeedWorldHud>();
         }
+        public void ShowGearEnergy() => worldHud?.CelebrateGearGain();
         public void ApplyGearCount(int count)
         {
             int newMax = Mathf.Clamp(count, 0, 4);
             if (newMax > maxEnergy)
-            {
                 energy += newMax - maxEnergy;
-                newEnergySlot = newMax - 1;
-                newEnergyFlashUntil = Time.time + 1.15f;
-            }
             maxEnergy = newMax;
             energy = Mathf.Min(energy, maxEnergy);
             if (energy == maxEnergy) nextRecharge = 0f;
@@ -142,6 +142,7 @@ namespace SeedGame
             if (Time.time - lastPulse < .18f || energy == 0) return;
             lastPulse = Time.time;
             energy--;
+            worldHud?.ShowForFourSeconds();
             if (nextRecharge <= 0f) nextRecharge = Time.time + energyRechargeSeconds;
             if (Time.time < pulseUntil && pulseStage < 4)
                 pulseStage++;
@@ -197,19 +198,6 @@ namespace SeedGame
                 case 4: return 2.15f;
                 default: return 1f;
             }
-        }
-        void OnGUI()
-        {
-            if (maxEnergy == 0) return;
-            for (int i = 0; i < maxEnergy; i++)
-            {
-                float flash = i == newEnergySlot ? Mathf.Clamp01((newEnergyFlashUntil - Time.time) / 1.15f) : 0f;
-                float grow = flash * 7f;
-                GUI.color = i < energy ? new Color(1f, .82f, .4f) : Color.gray;
-                GUI.Box(new Rect(16 + i * 36 - grow, 16 - grow, 30 + grow * 2f, 30 + grow * 2f),
-                    i < energy ? "✦" : "·");
-            }
-            GUI.color = Color.white;
         }
         public void SetCheckpoint(Transform point) { checkpoint = point; }
         public void Respawn()

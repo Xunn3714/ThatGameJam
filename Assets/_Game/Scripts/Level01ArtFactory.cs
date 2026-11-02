@@ -22,7 +22,7 @@ namespace SeedGame
             HideCollisionSprite("Jump tutorial stump");
             HideCollisionSprite("Practice wall");
             Picture("Stump artwork", group, "跳跃树桩", 8, .32f, 1.55f, .9f, 1);
-            Picture("Wall artwork", group, "墙", 20.65f, .8f, 2.2f, 1.8f, 1);
+            Picture("Wall artwork", group, "墙", 20.65f, 1.04f, 2.8f, 3.1f, 1);
 
             var plants = player.plants;
             if (plants != null && plants.Length >= 3)
@@ -45,8 +45,8 @@ namespace SeedGame
                 leaves.stepFramesB = Frames("植物b/b");
                 leaves.stepFramesC = Frames("植物c/c");
                 leaves.growthFrameSeconds = .14f;
-                Bridge(plants[1], "植物d/d", 1.2f, .27f, false);
-                Bridge(plants[2], "植物f/f", 4.1f, .64f, true);
+                Bridge(plants[1], "植物d/d", 1.5f, .04f, false);
+                Bridge(plants[2], "植物f/f", 4.6f, .16f, true);
             }
 
             var sky = Layer("Level01 Art - Sky", group, 0, 1);
@@ -90,18 +90,18 @@ namespace SeedGame
             for (int i = 0; i < rockX.Length; i++)
             {
                 var sprite = Art(i % 2 == 0 ? "前景石堆a" : "前景石堆b");
-                float height = Height(sprite, 4.6f);
+                float height = Height(sprite, 5f);
                 Picture("Foreground rocks " + (i + 1), front, sprite, rockX[i],
-                    -1.6f + height * .5f, 4.6f, height, 11);
+                    -1.82f + height * .5f, 5f, height, 11);
             }
             string[] leafPaths = { "前景叶片a（浅色）", "前景叶片c（深色）", "前景叶片b（浅色）", "前景叶片d（深色）" };
             float[] leafX = { -1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54 };
             for (int i = 0; i < leafX.Length; i++)
             {
                 var sprite = Art(leafPaths[i % leafPaths.Length]);
-                float height = Height(sprite, 1.4f);
+                float height = Height(sprite, 1.55f);
                 Picture("Foreground leaves " + (i + 1), front, sprite, leafX[i],
-                    -1.15f + height * .5f, 1.4f, height, 12);
+                    -1.32f + height * .5f, 1.55f, height, 12);
             }
         }
 
@@ -185,24 +185,37 @@ namespace SeedGame
 
         static void Bridge(ResonancePlant plant, string prefix, float width, float contactTop, bool fromRight)
         {
-            SetDormant(plant, prefix + "1", fromRight ? .34f : .42f);
+            SetDormant(plant, prefix + "1", 1f);
             var collider = plant.grownRoot.GetComponentInChildren<BoxCollider2D>(true);
-            var renderer = collider.GetComponent<SpriteRenderer>();
+            var renderer = plant.dormantVisual.GetComponent<SpriteRenderer>();
+            var unusedArt = collider.GetComponent<SpriteRenderer>();
+            if (unusedArt) unusedArt.enabled = false;
             var final = Art(prefix + "3");
-            renderer.sprite = final;
             renderer.color = Color.white;
             float scale = width / final.bounds.size.x;
             renderer.transform.localScale = new Vector3(scale, scale, 1);
-            float artCenterY = final.bounds.size.y * scale * .5f - .08f;
-            var center = renderer.transform.position;
-            renderer.transform.position = new Vector3(center.x, artCenterY, center.z);
-            collider.size = new Vector2(width / scale, .18f / scale);
-            collider.offset = new Vector2(0, (contactTop - .09f - artCenterY) / scale);
+            var first = Art(prefix + "1");
+            float firstWidth = first.bounds.size.x * scale;
+            float firstHeight = first.bounds.size.y * scale;
+            float rootX = plant.transform.position.x;
+            renderer.transform.position = new Vector3(
+                rootX + (fromRight ? -firstWidth : firstWidth) * .5f,
+                firstHeight * .5f - .08f, 0f);
+            collider.transform.position = new Vector3(
+                rootX + (fromRight ? -width : width) * .5f,
+                contactTop - .09f, 0f);
+            collider.transform.localScale = Vector3.one;
+            collider.size = new Vector2(width, .18f);
+            collider.offset = Vector2.zero;
             var highlight = plant.grownRoot.transform.Find("Vine top highlight");
             if (highlight) Remove(highlight.gameObject);
             plant.bridgeFrames = Frames(prefix);
             plant.bridgeRenderer = renderer;
+            plant.bridgeCollider = collider;
             plant.bridgeGrowsFromRight = fromRight;
+            plant.bridgeVisualBaseY = fromRight ? -.52f : -.31f;
+            renderer.transform.position = new Vector3(renderer.transform.position.x,
+                plant.bridgeVisualBaseY + firstHeight * .5f, 0f);
             plant.growthFrameSeconds = .14f;
         }
 

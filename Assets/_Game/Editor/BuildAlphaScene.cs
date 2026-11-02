@@ -11,8 +11,16 @@ public static class BuildAlphaScene
     public static void Build()
     {
         const string root = "Assets/_Game";
+        AssetDatabase.Refresh();
         PrepareSprite(root + "/Art/Placeholder/white.png", 1);
         PrepareSprite(root + "/Art/Character/主角形象草稿.PNG", 1000);
+        for (int i = 1; i <= 3; i++)
+        {
+            PrepareSprite(root + "/Resources/Character/Walk" + i + ".png", 200);
+            PrepareSprite(root + "/Resources/UI/CelticEnergy" + i + ".png", 200);
+        }
+        PrepareSprite(root + "/Resources/UI/Gear.png", 200);
+        PrepareSprite(root + "/Resources/UI/ResonanceKey.png", 200);
         var square = AssetDatabase.LoadAssetAtPath<Sprite>(root + "/Art/Placeholder/white.png");
         var character = AssetDatabase.LoadAssetAtPath<Sprite>(root + "/Art/Character/主角形象草稿.PNG");
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

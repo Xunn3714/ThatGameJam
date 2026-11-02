@@ -44,7 +44,8 @@ namespace SeedGame
             collider.isTrigger = true;
             go.AddComponent<GearPickup>();
             var renderer = go.GetComponent<SpriteRenderer>();
-            renderer.color = new Color(1f, .75f, .24f);
+            renderer.sprite = Resources.Load<Sprite>("UI/Gear") ?? renderer.sprite;
+            renderer.color = Color.white;
             renderer.sortingOrder = 8;
         }
 

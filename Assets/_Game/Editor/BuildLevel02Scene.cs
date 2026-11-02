@@ -45,12 +45,20 @@ public static class BuildLevel02Scene
         feet.localPosition = new Vector3(0, -.59f, 0);
         var art = new GameObject("Original character draft");
         art.transform.SetParent(playerObject.transform);
-        art.transform.localPosition = new Vector3(.146f, .107f, 0);
+        art.transform.localPosition = new Vector3(.05f, .09f, 0);
+        art.transform.localScale = Vector3.one * .82f;
         var heroRenderer = art.AddComponent<SpriteRenderer>();
-        heroRenderer.sprite = hero;
+        heroRenderer.sprite = Resources.Load<Sprite>("Character/Walk1") ?? hero;
         heroRenderer.sortingOrder = 5;
         var player = playerObject.AddComponent<SeedPlayer>();
         player.feet = feet;
+        var animation = art.AddComponent<SeedCharacterAnimation>();
+        animation.player = player;
+        animation.frames = new[] {
+            Resources.Load<Sprite>("Character/Walk1"),
+            Resources.Load<Sprite>("Character/Walk2"),
+            Resources.Load<Sprite>("Character/Walk3")
+        };
         follow.target = playerObject.transform;
 
         Block("Ruins floor before shallow water", 5f, -1.2f, 10f, 2.4f, new Color(.23f,.32f,.32f), true);
@@ -251,8 +259,8 @@ public static class BuildLevel02Scene
         go.transform.position = new Vector3(x, y, 0);
         go.transform.localScale = new Vector3(width, height, 1);
         var renderer = go.AddComponent<SpriteRenderer>();
-        renderer.sprite = square;
-        renderer.color = tint;
+        renderer.sprite = gear ? Resources.Load<Sprite>("UI/Gear") ?? square : square;
+        renderer.color = gear ? Color.white : tint;
         if (solid)
         {
             go.layer = 6;

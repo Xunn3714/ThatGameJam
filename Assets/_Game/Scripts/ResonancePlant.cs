@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SeedGame
@@ -20,15 +21,41 @@ namespace SeedGame
         public float stepArtGroundY;
         public Sprite[] bridgeFrames;
         public SpriteRenderer bridgeRenderer;
+        public Collider2D bridgeCollider;
         public bool bridgeGrowsFromRight;
+        public float bridgeVisualBaseY = -.08f;
         public bool keepDormantAsRoot;
         public float growthFrameSeconds = .14f;
+        readonly List<InteractableHighlight> highlights = new List<InteractableHighlight>();
         static Sprite placeholderSprite;
         static Texture2D placeholderTexture;
+
+        void Start()
+        {
+            if (isActive) return;
+            var targets = new List<SpriteRenderer>();
+            if (dormantVisual)
+            {
+                var renderer = dormantVisual.GetComponent<SpriteRenderer>();
+                if (renderer) targets.Add(renderer);
+            }
+            if (stepArtRenderers != null)
+                foreach (var renderer in stepArtRenderers)
+                    if (renderer && !targets.Contains(renderer)) targets.Add(renderer);
+            foreach (var renderer in targets)
+            {
+                var highlight = renderer.gameObject.AddComponent<InteractableHighlight>();
+                highlight.Initialize(renderer, new Color(.74f, 1f, .58f));
+                highlights.Add(highlight);
+            }
+        }
+
         public void Activate()
         {
             if (isActive) return;
             isActive = true;
+            foreach (var highlight in highlights)
+                if (highlight) highlight.Hide();
             if (oneWayPlatforms && grownRoot)
                 foreach (var collider in grownRoot.GetComponentsInChildren<Collider2D>(true))
                     MakeOneWay(collider);
@@ -105,28 +132,20 @@ namespace SeedGame
 
         IEnumerator GrowBridge()
         {
-            if (dormantVisual && !keepDormantAsRoot) dormantVisual.SetActive(false);
-            grownRoot.SetActive(true);
-            var collider = bridgeRenderer.GetComponent<Collider2D>();
+            if (grownRoot) grownRoot.SetActive(true);
+            var collider = bridgeCollider ? bridgeCollider : bridgeRenderer.GetComponent<Collider2D>();
             if (collider) collider.enabled = false;
-            Vector3 center = bridgeRenderer.transform.position;
-            Sprite final = bridgeFrames[bridgeFrames.Length - 1];
-            float finalWidth = final.bounds.size.x * Mathf.Abs(bridgeRenderer.transform.lossyScale.x);
-            float finalHeight = final.bounds.size.y * Mathf.Abs(bridgeRenderer.transform.lossyScale.y);
             foreach (var frame in bridgeFrames)
             {
                 if (!frame) continue;
                 bridgeRenderer.sprite = frame;
                 float width = frame.bounds.size.x * Mathf.Abs(bridgeRenderer.transform.lossyScale.x);
                 float height = frame.bounds.size.y * Mathf.Abs(bridgeRenderer.transform.lossyScale.y);
-                float direction = bridgeGrowsFromRight ? 1f : -1f;
-                bridgeRenderer.transform.position = center + new Vector3(
-                    direction * (finalWidth - width) * .5f,
-                    -(finalHeight - height) * .5f, 0);
+                bridgeRenderer.transform.position = new Vector3(
+                    transform.position.x + (bridgeGrowsFromRight ? -width : width) * .5f,
+                    height * .5f + bridgeVisualBaseY, 0f);
                 yield return new WaitForSeconds(growthFrameSeconds);
             }
-            bridgeRenderer.sprite = final;
-            bridgeRenderer.transform.position = center;
             if (collider) collider.enabled = true;
         }
 
