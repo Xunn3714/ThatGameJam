@@ -13,6 +13,7 @@ public static class AlphaSceneFactory
         CameraAndBackdrop();
         var player = CreatePlayer();
         Camera.main.GetComponent<SeedCamera>().target = player.transform;
+        LeftWorldBoundary();
         Ground("Starting earth", 0, 25, -2.4f, 2.4f);
         Ground("After gap earth", 30, 47, -2.4f, 2.4f);
         Solid("Jump tutorial stump", 8.0f, .32f, .95f, .64f, new Color(.28f,.27f,.34f));
@@ -54,7 +55,7 @@ public static class AlphaSceneFactory
 
     static SeedPlayer CreatePlayer()
     {
-        var go = new GameObject("Player - seed sketch"); go.transform.position = new Vector3(2, .7f, 0);
+        var go = new GameObject("Player - seed sketch"); go.transform.position = new Vector3(2, 1.35f, 0);
         var body = go.AddComponent<Rigidbody2D>(); body.gravityScale = 2.7f;
         body.interpolation = RigidbodyInterpolation2D.Interpolate;
         var col = go.AddComponent<BoxCollider2D>(); col.size = new Vector2(.58f, 1.1f);
@@ -76,6 +77,15 @@ public static class AlphaSceneFactory
             Resources.Load<Sprite>("Character/Walk3")
         };
         return player;
+    }
+
+    static void LeftWorldBoundary()
+    {
+        var go = new GameObject("Left world boundary");
+        go.transform.SetParent(group);
+        go.transform.position = new Vector3(.5f, 3.5f, 0f);
+        go.layer = 6;
+        go.AddComponent<BoxCollider2D>().size = new Vector2(.5f, 13f);
     }
 
     static ResonancePlant Plant(string name, float x, float y, Vector4[] leaves)
@@ -140,8 +150,8 @@ public static class AlphaSceneFactory
         var collider = go.AddComponent<PolygonCollider2D>();
         collider.points = new[] {
             new Vector2(-1.4f, 0f), new Vector2(-1.4f, 2f),
-            new Vector2(-.95f, 2.15f), new Vector2(-.7f, 2.08f),
-            new Vector2(1.05f, .2f), new Vector2(1.4f, 0f)
+            new Vector2(-1.05f, 2.16f), new Vector2(-.76f, 2.26f),
+            new Vector2(.98f, .12f), new Vector2(1.4f, 0f)
         };
     }
     static GameObject Solid(string name, float x, float y, float w, float h, Color color)

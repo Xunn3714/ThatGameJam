@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -25,24 +24,24 @@ namespace SeedGame
         float horizontal;
         bool jumpQueued;
         float lastPulse;
+        float lastEmptyAttempt = -10f;
         int maxEnergy;
         int energy;
         int pulseStage;
         int pulseSerial;
         float nextRecharge;
         float pulseUntil;
-        float visualRadius;
+        float pulseBaseRadius;
         Vector3 pulseCenter;
-        LineRenderer pulseRing;
-        Material pulseMaterial;
         PhysicsMaterial2D contactMaterial;
-        Coroutine pulseRoutine;
+        ResonanceBurstVfx resonanceVfx;
         SeedWorldHud worldHud;
         float normalGravity;
         public int PulseSerial => pulseSerial;
         public float PulseEndsAt => pulseUntil;
         public int Energy => energy;
         public int MaxEnergy => maxEnergy;
+        public bool IsOnGround => IsGrounded();
 
         void Awake()
         {
@@ -60,28 +59,11 @@ namespace SeedGame
             startPosition = transform.position;
             // A scene saved while the intro was locked must still accept input on the next Play.
             controlsEnabled = true;
-            var ringObject = new GameObject("Reusable resonance ring");
-            ringObject.transform.position = transform.position;
-            pulseRing = ringObject.AddComponent<LineRenderer>();
-            pulseRing.useWorldSpace = false;
-            pulseRing.loop = true;
-            pulseRing.positionCount = 48;
-            pulseRing.startWidth = pulseRing.endWidth = .035f;
-            pulseMaterial = new Material(Shader.Find("Sprites/Default"));
-            pulseRing.sharedMaterial = pulseMaterial;
-            pulseRing.startColor = pulseRing.endColor = new Color(1f, .82f, .45f, .8f);
-            pulseRing.sortingOrder = 20;
-            for (int i = 0; i < 48; i++)
-            {
-                float angle = i * Mathf.PI * 2f / 48f;
-                pulseRing.SetPosition(i, new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0));
-            }
-            pulseRing.enabled = false;
+            resonanceVfx = GetComponent<ResonanceBurstVfx>();
+            if (!resonanceVfx) resonanceVfx = gameObject.AddComponent<ResonanceBurstVfx>();
         }
         void OnDestroy()
         {
-            if (pulseRing) Destroy(pulseRing.gameObject);
-            if (pulseMaterial != null) Destroy(pulseMaterial);
             if (contactMaterial != null) Destroy(contactMaterial);
         }
         void Start()
@@ -107,6 +89,7 @@ namespace SeedGame
             if (energy < maxEnergy && nextRecharge > 0f && Time.time >= nextRecharge)
             {
                 energy++;
+                GameAudio.PlayEnergyRecharge();
                 nextRecharge = energy < maxEnergy ? Time.time + energyRechargeSeconds : 0f;
             }
             if (!controlsEnabled) return;
@@ -139,7 +122,17 @@ namespace SeedGame
         bool IsGrounded() => Physics2D.OverlapCircle(feet.position, .13f, groundMask) != null;
         void Pulse()
         {
-            if (Time.time - lastPulse < .18f || energy == 0) return;
+            if (energy == 0)
+            {
+                if (Time.time - lastEmptyAttempt >= .3f)
+                {
+                    lastEmptyAttempt = Time.time;
+                    GameAudio.PlayNoEnergy();
+                    worldHud?.WarnNoEnergy();
+                }
+                return;
+            }
+            if (Time.time - lastPulse < .18f) return;
             lastPulse = Time.time;
             energy--;
             worldHud?.ShowForFourSeconds();
@@ -151,16 +144,14 @@ namespace SeedGame
                 pulseStage = 1;
                 pulseSerial++;
                 pulseCenter = transform.position;
-                visualRadius = 0f;
+                pulseBaseRadius = ResonanceBaseRadius();
             }
             pulseUntil = Time.time + 2f;
-            float radius = resonanceRadius * RadiusMultiplier(pulseStage);
+            GameAudio.PlayResonance(pulseStage);
+            float radius = pulseBaseRadius * RadiusMultiplier(pulseStage);
             if (plants == null || plants.Length == 0)
                 plants = FindObjectsByType<ResonancePlant>();
-            if (pulseRoutine != null) StopCoroutine(pulseRoutine);
-            pulseRing.enabled = true;
-            pulseRing.transform.position = pulseCenter;
-            pulseRoutine = StartCoroutine(PulseVisual());
+            resonanceVfx.Play(pulseCenter, radius, pulseStage);
             int plantsInRange = 0;
             foreach (var plant in plants)
                 if (plant && Vector2.Distance(pulseCenter, plant.transform.position) <= radius)
@@ -177,17 +168,13 @@ namespace SeedGame
             if (plantsInRange == 0)
                 Debug.Log("Resonance reached no plant at " + transform.position);
         }
-        IEnumerator PulseVisual()
+        float ResonanceBaseRadius()
         {
-            while (Time.time < pulseUntil)
-            {
-                float target = resonanceRadius * RadiusMultiplier(pulseStage);
-                visualRadius = Mathf.MoveTowards(visualRadius, target, resonanceRadius * 8f * Time.deltaTime);
-                pulseRing.transform.localScale = new Vector3(visualRadius, visualRadius, 1f);
-                yield return null;
-            }
-            pulseRing.enabled = false;
-            pulseRoutine = null;
+            var gate = FindFirstObjectByType<Level02Gate>();
+            if (gate && !gate.IsOpen && pulseCenter.x >= gate.transform.position.x - 8f &&
+                pulseCenter.x < gate.transform.position.x)
+                return Mathf.Max(resonanceRadius, 8.6f);
+            return resonanceRadius;
         }
         static float RadiusMultiplier(int stage)
         {

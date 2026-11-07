@@ -54,6 +54,7 @@ namespace SeedGame
         {
             if (isActive) return;
             isActive = true;
+            GameAudio.PlayPlantGrowth();
             foreach (var highlight in highlights)
                 if (highlight) highlight.Hide();
             if (oneWayPlatforms && grownRoot)
@@ -124,8 +125,17 @@ namespace SeedGame
                     renderer.transform.localPosition = new Vector3(0, Mathf.Lerp(startingY, grownY, progress), 0);
                     yield return new WaitForSeconds(growthFrameSeconds);
                 }
-                var collider = platform.AddComponent<BoxCollider2D>();
-                collider.size = new Vector2(ColliderWidth(i, step.z), step.w);
+                // Match the whole finished plant's upper outline, while keeping
+                // the designed step height used by the first-level puzzle.
+                renderer.gameObject.layer = 6;
+                var collider = renderer.gameObject.AddComponent<EdgeCollider2D>();
+                var top = Level02GrowthVine.BuildContinuousTop(renderer);
+                float actualTop = renderer.transform.TransformPoint(top[top.Length / 2]).y;
+                float verticalOffset = (step.y + step.w * .5f - actualTop) /
+                    Mathf.Max(.01f, Mathf.Abs(renderer.transform.lossyScale.y));
+                for (int point = 0; point < top.Length; point++)
+                    top[point].y += verticalOffset;
+                collider.points = top;
                 if (oneWayPlatforms) MakeOneWay(collider);
             }
         }
@@ -146,7 +156,14 @@ namespace SeedGame
                     height * .5f + bridgeVisualBaseY, 0f);
                 yield return new WaitForSeconds(growthFrameSeconds);
             }
-            if (collider) collider.enabled = true;
+            // Follow the finished artwork with one continuous walkable surface,
+            // as the second level does for its grown plants. The prototype box
+            // would leave the player floating above dips in these two vines.
+            var edge = bridgeRenderer.GetComponent<EdgeCollider2D>();
+            if (!edge) edge = bridgeRenderer.gameObject.AddComponent<EdgeCollider2D>();
+            bridgeRenderer.gameObject.layer = 6;
+            edge.points = Level02GrowthVine.BuildContinuousTop(bridgeRenderer);
+            MakeOneWay(edge);
         }
 
         void GeneratePlaceholderSteps()

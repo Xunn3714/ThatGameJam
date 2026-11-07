@@ -18,11 +18,20 @@ namespace SeedGame
                 GearState.Reset();
             else if (sceneName == "Level02_Alpha")
                 GearState.BeginSecondLevel();
+            else if (sceneName == "Level03_Alpha")
+                GearState.BeginThirdLevel();
         }
         void Start()
         {
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level01_Alpha")
+            var sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (sceneName == "Level01_Alpha")
+            {
                 Level01TransitionSetup.Install();
+                Level01CollisionSync.Install();
+            }
+            else if (sceneName == "Level02_Alpha" ||
+                GameObject.Find("Shallow water basin - safe lower route"))
+                Level02SceneSync.Install();
         }
         void Update()
         {
@@ -44,7 +53,8 @@ namespace SeedGame
             if (!finished) return;
             label ??= new GUIStyle(GUI.skin.box) { fontSize = 22, alignment = TextAnchor.MiddleCenter };
             label.normal.textColor = Color.white;
-            GUI.Box(new Rect(Screen.width / 2f - 250, 22, 500, 54), completionMessage, label);
+            GUI.Box(new Rect(Screen.width / 2f - 250, Screen.height / 2f - 27, 500, 54),
+                completionMessage, label);
         }
     }
 }

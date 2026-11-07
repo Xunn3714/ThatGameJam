@@ -15,6 +15,9 @@ public static class BuildLevel02Scene
     [MenuItem("Seed/Build second level alpha")]
     public static void Build()
     {
+        if (File.Exists(Second) && File.ReadAllText(Second).Contains("placedStages:"))
+            throw new System.InvalidOperationException(
+                "Level02_Alpha contains hand-placed animated art. Rebuilding would erase its placement.");
         PrepareAiFrames();
         square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Placeholder/white.png");
         var hero = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Character/主角形象草稿.PNG");
@@ -33,9 +36,11 @@ public static class BuildLevel02Scene
         var follow = cameraObject.AddComponent<SeedCamera>();
         follow.minX = 0; follow.maxX = 60; follow.minY = -1.6f; follow.maxY = 12;
         follow.deadZoneX = 0f;
+        follow.playIntro = false;
+        follow.playSize = 5.2f;
 
         var playerObject = new GameObject("Player - seed sketch");
-        playerObject.transform.position = new Vector3(2f, .7f, 0f);
+        playerObject.transform.position = new Vector3(2f, .55f, 0f);
         var body = playerObject.AddComponent<Rigidbody2D>();
         body.gravityScale = 2.7f;
         body.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -157,6 +162,7 @@ public static class BuildLevel02Scene
         checkpoint.GetComponent<BoxCollider2D>().size = new Vector2(1.2f, 1.6f);
         checkpoint.AddComponent<Checkpoint>();
 
+        Level02ArtFactory.Install();
         Directory.CreateDirectory(Root + "/Scenes");
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene(), Second);
         EditorBuildSettings.scenes = new[] {

@@ -9,6 +9,8 @@ namespace SeedGame
         // Level 2 always begins with the two gears earned in level 1.
         // This also makes opening its scene directly in the Editor playable.
         public static void BeginSecondLevel() => Count = 2;
+        // The third scene can also be opened directly while testing.
+        public static void BeginThirdLevel() => Count = 3;
         public static void Collect() { if (Count < 4) Count++; }
     }
 }

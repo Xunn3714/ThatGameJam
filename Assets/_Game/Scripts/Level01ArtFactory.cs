@@ -22,7 +22,7 @@ namespace SeedGame
             HideCollisionSprite("Jump tutorial stump");
             HideCollisionSprite("Practice wall");
             Picture("Stump artwork", group, "跳跃树桩", 8, .32f, 1.55f, .9f, 1);
-            Picture("Wall artwork", group, "墙", 20.65f, 1.04f, 2.8f, 3.1f, 1);
+            Picture("Wall artwork", group, "墙", 20.65f, 1.04f, 2.8f, 3.1f, 6);
 
             var plants = player.plants;
             if (plants != null && plants.Length >= 3)
@@ -103,6 +103,14 @@ namespace SeedGame
                 Picture("Foreground leaves " + (i + 1), front, sprite, leafX[i],
                     -1.32f + height * .5f, 1.55f, height, 12);
             }
+
+            // A fixed foreground silhouette hides the left limit without parallax drift.
+            var boundaryTree = Art("树木5");
+            const float boundaryTreeHeight = 12f;
+            Picture("Left boundary foreground tree", group, boundaryTree,
+                .25f, -2f + boundaryTreeHeight * .5f,
+                boundaryTreeHeight * boundaryTree.bounds.size.x / boundaryTree.bounds.size.y,
+                boundaryTreeHeight, 20);
         }
 
         static Sprite[] Frames(string prefix) => new[] {

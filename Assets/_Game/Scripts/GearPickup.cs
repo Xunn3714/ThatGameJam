@@ -55,6 +55,7 @@ namespace SeedGame
                     GearState.Collect();
                     player.ApplyGearCount(GearState.Count);
                     player.ShowGearEnergy();
+                    GameAudio.PlayGearPickup();
                     Debug.Log("Gear collected: " + GearState.Count + "/4");
                 }
                 var renderer = GetComponent<SpriteRenderer>();
