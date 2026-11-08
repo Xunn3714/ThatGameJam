@@ -22,7 +22,19 @@ namespace SeedGame
         {
             Level02PlacedStages.Show(placedStages, 0);
             bounceCollider = GetComponent<BoxCollider2D>();
-            if (bounceCollider) bounceCollider.enabled = false;
+            if (bounceCollider)
+            {
+                // The cap catches a falling player, but must let a player rise through it.
+                var effector = GetComponent<PlatformEffector2D>();
+                if (!effector) effector = gameObject.AddComponent<PlatformEffector2D>();
+                effector.useOneWay = true;
+                effector.useOneWayGrouping = true;
+                effector.surfaceArc = 175f;
+                effector.useSideFriction = false;
+                effector.useSideBounce = false;
+                bounceCollider.usedByEffector = true;
+                bounceCollider.enabled = false;
+            }
         }
 
         void Start()
@@ -36,7 +48,7 @@ namespace SeedGame
             if (!awake && ((placedStages != null && placedStages.Length > 1) ||
                 (growthFrames != null && growthFrames.Length > 0)))
             {
-                GameAudio.PlayPlantGrowth();
+                GameAudio.PlayPlantGrowth(this);
                 StartCoroutine(Grow(canRescueFromBelow ? player : null));
             }
             awake = true;

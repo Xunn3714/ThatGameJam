@@ -25,6 +25,10 @@ namespace SeedGame
         Vector3[] rubbleStarts;
         Quaternion[] rubbleRotations;
         Sprite intactSlab;
+        Sprite foldedLeftSprite;
+        Sprite foldedRightSprite;
+        SpriteRenderer fallenSlab;
+        Coroutine foldRoutine;
         public bool IsOpen => open;
         public bool IsFullyOpen => fullyOpen;
 
@@ -41,6 +45,12 @@ namespace SeedGame
             }
         }
 
+        void OnDestroy()
+        {
+            if (foldedLeftSprite) Destroy(foldedLeftSprite);
+            if (foldedRightSprite) Destroy(foldedRightSprite);
+        }
+
         void Update()
         {
             if (open || !player || flowers == null || Time.time < player.PulseEndsAt) return;
@@ -52,6 +62,9 @@ namespace SeedGame
         void ResetBreakage()
         {
             StopAllCoroutines();
+            foldRoutine = null;
+            if (fallenSlab) Destroy(fallenSlab.gameObject);
+            fallenSlab = null;
             pushingPlants = 0;
             if (jammingSlab && slabBreakFrames != null && slabBreakFrames.Length > 0)
             {
@@ -73,8 +86,11 @@ namespace SeedGame
             if (index < 0) return;
             pushingPlants++;
             if (jammingSlab && slabBreakFrames != null && slabBreakFrames.Length > 0)
-                jammingSlab.sprite = slabBreakFrames[Mathf.Min(slabBreakFrames.Length - 1,
-                    pushingPlants <= 2 ? 0 : 1)];
+            {
+                if (pushingPlants <= 2) jammingSlab.sprite = slabBreakFrames[0];
+                else if (!fallenSlab && foldRoutine == null)
+                    foldRoutine = StartCoroutine(FoldSlab());
+            }
             if (rubble != null && index < rubble.Length && rubble[index])
                 StartCoroutine(PushRock(index));
         }
@@ -97,6 +113,45 @@ namespace SeedGame
             }
         }
 
+        IEnumerator FoldSlab()
+        {
+            var source = slabBreakFrames[slabBreakFrames.Length - 1];
+            if (!source || !jammingSlab) yield break;
+            float cut = Mathf.Round(source.rect.width * .655f);
+            float ppu = source.pixelsPerUnit;
+            if (!foldedLeftSprite)
+            {
+                foldedLeftSprite = Sprite.Create(source.texture,
+                    new Rect(source.rect.x, source.rect.y, cut, source.rect.height),
+                    new Vector2(source.pivot.x / cut, source.pivot.y / source.rect.height), ppu);
+                foldedRightSprite = Sprite.Create(source.texture,
+                    new Rect(source.rect.x + cut, source.rect.y, source.rect.width - cut, source.rect.height),
+                    new Vector2(0f, .64f), ppu);
+            }
+            Vector3 hinge = jammingSlab.transform.TransformPoint(new Vector3(
+                (cut - source.pivot.x) / ppu,
+                (.64f * source.rect.height - source.pivot.y) / ppu, 0f));
+            jammingSlab.sprite = foldedLeftSprite;
+            fallenSlab = new GameObject("Fallen right half of gear-blocking slab").AddComponent<SpriteRenderer>();
+            fallenSlab.sprite = foldedRightSprite;
+            fallenSlab.sortingLayerID = jammingSlab.sortingLayerID;
+            fallenSlab.sortingOrder = jammingSlab.sortingOrder;
+            fallenSlab.transform.position = hinge;
+            fallenSlab.transform.rotation = jammingSlab.transform.rotation;
+            fallenSlab.transform.localScale = jammingSlab.transform.lossyScale;
+            Quaternion start = fallenSlab.transform.rotation;
+            Quaternion end = start * Quaternion.Euler(0f, 0f, -50f);
+            for (float t = 0f; t < .8f; t += Time.deltaTime)
+            {
+                if (!fallenSlab) yield break;
+                fallenSlab.transform.rotation = Quaternion.Slerp(start, end,
+                    Mathf.SmoothStep(0f, 1f, t / .8f));
+                yield return null;
+            }
+            if (fallenSlab) fallenSlab.transform.rotation = end;
+            foldRoutine = null;
+        }
+
         public void Check(int serial)
         {
             if (open || flowers == null || flowers.Length != 4) return;
@@ -108,8 +163,9 @@ namespace SeedGame
 
         IEnumerator Open()
         {
-            if (jammingSlab && slabBreakFrames != null && slabBreakFrames.Length > 0)
+            if (jammingSlab && !fallenSlab && slabBreakFrames != null && slabBreakFrames.Length > 0)
                 jammingSlab.sprite = slabBreakFrames[slabBreakFrames.Length - 1];
+            if (foldRoutine != null) yield return foldRoutine;
             yield return new WaitForSeconds(.35f);
             Vector3 doorStart = gateVisual ? gateVisual.transform.position : transform.position;
             // The small gear turns at roughly 0.7 world units per second along

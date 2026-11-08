@@ -23,7 +23,7 @@ namespace SeedGame
         {
             if (ActivePulse == pulseSerial) return;
             ActivePulse = pulseSerial;
-            GameAudio.PlayPlantGrowth();
+            GameAudio.PlayPlantGrowth(this);
             growth = 0f;
             FullyGrown = false;
             if (highlight) highlight.Hide();

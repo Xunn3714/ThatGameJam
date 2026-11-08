@@ -26,6 +26,7 @@ namespace SeedGame
         public float bridgeVisualBaseY = -.08f;
         public bool keepDormantAsRoot;
         public float growthFrameSeconds = .14f;
+        public bool BridgeFullyGrown { get; private set; }
         readonly List<InteractableHighlight> highlights = new List<InteractableHighlight>();
         static Sprite placeholderSprite;
         static Texture2D placeholderTexture;
@@ -54,7 +55,7 @@ namespace SeedGame
         {
             if (isActive) return;
             isActive = true;
-            GameAudio.PlayPlantGrowth();
+            GameAudio.PlayPlantGrowth(this);
             foreach (var highlight in highlights)
                 if (highlight) highlight.Hide();
             if (oneWayPlatforms && grownRoot)
@@ -142,6 +143,7 @@ namespace SeedGame
 
         IEnumerator GrowBridge()
         {
+            BridgeFullyGrown = false;
             if (grownRoot) grownRoot.SetActive(true);
             var collider = bridgeCollider ? bridgeCollider : bridgeRenderer.GetComponent<Collider2D>();
             if (collider) collider.enabled = false;
@@ -164,6 +166,7 @@ namespace SeedGame
             bridgeRenderer.gameObject.layer = 6;
             edge.points = Level02GrowthVine.BuildContinuousTop(bridgeRenderer);
             MakeOneWay(edge);
+            BridgeFullyGrown = true;
         }
 
         void GeneratePlaceholderSteps()

@@ -43,7 +43,7 @@ public static class AlphaSceneFactory
         c.backgroundColor = new Color(.37f,.36f,.58f);
         go.AddComponent<AudioListener>();
         var follow = go.AddComponent<SeedCamera>();
-        follow.minX = 0; follow.maxX = 47; follow.minY = -1.6f; follow.maxY = 12;
+        follow.minX = 0; follow.maxX = 47.7f; follow.minY = -1.6f; follow.maxY = 12;
         follow.playSize = 4f;
         go.transform.position = new Vector3(2f, 2.1f, -10f);
         Decorative("Distant violet hills", 23.5f, 3.3f, 47, 7, new Color(.52f,.48f,.68f), -20);

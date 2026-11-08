@@ -71,9 +71,20 @@ namespace SeedGame
                 cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize,
                     frameSize, ref sizeVelocity, .65f);
                 Vector2 center = (fixedViewMin + fixedViewMax) * .5f;
+                float fixedHalfWidth = cam.orthographicSize * cam.aspect;
+                float fixedMaxCenterX = maxX - fixedHalfWidth;
+                center.x = Mathf.Min(center.x, fixedMaxCenterX);
                 Vector3 position = new Vector3(center.x, center.y, transform.position.z);
                 transform.position = Vector3.SmoothDamp(transform.position,
                     position, ref velocity, .7f);
+                // SmoothDamp can briefly overshoot when the fixed framing changes.
+                var clamped = transform.position;
+                clamped.x = Mathf.Min(clamped.x, fixedMaxCenterX);
+                // The gate framing is taller than the normal follow bounds.
+                // Keep its chosen height while preventing the bottom edge from
+                // dipping below the level's lower camera limit during the blend.
+                clamped.y = Mathf.Max(clamped.y, minY + cam.orthographicSize);
+                transform.position = clamped;
                 return;
             }
             if (returningFromFixedView)
@@ -118,6 +129,15 @@ namespace SeedGame
             else
                 transform.position = Vector3.SmoothDamp(transform.position,
                     desiredPosition, ref velocity, followTime);
+            // The viewport grows during the pickup zoom-out. Clamp the actual
+            // smoothed position using this frame's size, not only its target.
+            var boundedPosition = transform.position;
+            boundedPosition.x = Mathf.Clamp(boundedPosition.x,
+                minX + halfWidth, maxX - halfWidth);
+            boundedPosition.y = cameraMinY <= cameraMaxY
+                ? Mathf.Clamp(boundedPosition.y, cameraMinY, cameraMaxY)
+                : (minY + maxY) * .5f;
+            transform.position = boundedPosition;
         }
     }
 }

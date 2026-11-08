@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace SeedGame
@@ -11,7 +12,10 @@ namespace SeedGame
         const float CanvasWidth = 3000f;
         const float CanvasHeight = 1688f;
         const float PanelInterval = 2.5f;
+        const float EndingPanelInterval = 4f;
         const float PanelFade = .35f;
+        const string EndingThanks = "Thank you for playing!";
+        const string EndingHint = "Press ESC to exit, press R to restart the game.";
 
         static ComicSequence instance;
         readonly Texture2D[] intro = new Texture2D[4];
@@ -22,6 +26,7 @@ namespace SeedGame
         bool showingEnding;
         bool showIntroPanels;
         bool showEndingPanels;
+        bool endingComplete;
         int visiblePanels;
         float newestPanelAt;
         float blackAlpha;
@@ -30,6 +35,9 @@ namespace SeedGame
         Rigidbody2D playerBody;
         SeedCamera openingCamera;
         float normalGravity;
+        Font endingHintFont;
+        GUIStyle endingHintStyle;
+        GUIStyle endingHintShadowStyle;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Bootstrap()
@@ -48,6 +56,7 @@ namespace SeedGame
                 intro[i] = Resources.Load<Texture2D>("Comics/Intro" + (i + 1));
             for (int i = 0; i < 4; i++)
                 ending[i] = Resources.Load<Texture2D>("Comics/Ending" + (i + 1));
+            endingHintFont = Resources.Load<Font>("Fonts/Chewy-Regular");
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -63,6 +72,7 @@ namespace SeedGame
             StopAllCoroutines();
             GameAudio.SetOpeningComicWind(false);
             showingIntro = showingEnding = showIntroPanels = showEndingPanels = false;
+            endingComplete = false;
             blackAlpha = whiteAlpha = 0f;
             visiblePanels = 0;
             player = FindAnyObjectByType<SeedPlayer>();
@@ -111,6 +121,16 @@ namespace SeedGame
             {
                 StartCoroutine(WaitForEnding());
             }
+        }
+
+        void Update()
+        {
+            if (!endingComplete || Keyboard.current == null || !Keyboard.current.rKey.wasPressedThisFrame)
+                return;
+
+            endingComplete = false;
+            introPlayed = false;
+            SceneManager.LoadScene("Level01_Alpha");
         }
 
         IEnumerator PlayIntro()
@@ -174,14 +194,15 @@ namespace SeedGame
             visiblePanels = 1;
             newestPanelAt = Time.time;
             yield return FadeWhite(1f, 0f, .8f);
-            yield return new WaitForSeconds(PanelInterval - .8f);
+            yield return new WaitForSeconds(EndingPanelInterval - .8f);
             for (int count = 2; count <= 4; count++)
             {
                 visiblePanels = count;
                 newestPanelAt = Time.time;
-                yield return new WaitForSeconds(PanelInterval);
+                yield return new WaitForSeconds(EndingPanelInterval);
             }
             // Keep the completed four-panel image on screen.
+            endingComplete = true;
         }
 
         IEnumerator FadeBlack(float from, float to, float seconds)
@@ -225,15 +246,59 @@ namespace SeedGame
                 {
                     DrawPanel(ending[0], 113, 0, 2865, 734, left, top, scale, PanelOpacity(1));
                     DrawRightEdge(ending[0], 2978, 0, 22, 734, left, top, scale, PanelOpacity(1));
-                    DrawPanel(ending[1], 1970, 242, 1010, 1445, left, top, scale, PanelOpacity(2));
-                    DrawRightEdge(ending[1], 2980, 242, 20, 1445, left, top, scale, PanelOpacity(2));
-                    DrawPanel(ending[2], 578, 679, 1751, 1008, left, top, scale, PanelOpacity(3));
+                    DrawPanel(ending[1], 1971, 243, 1010, 1445, left, top, scale, PanelOpacity(2));
+                    DrawRightEdge(ending[1], 2981, 243, 19, 1445, left, top, scale, PanelOpacity(2));
+                    DrawPanel(ending[2], 579, 680, 1751, 1008, left, top, scale, PanelOpacity(3));
                     DrawPanel(ending[3], 0, 0, 1046, 1688, left, top, scale, PanelOpacity(4));
                 }
             }
             if (whiteAlpha > 0f) DrawSolid(new Color(1f, 1f, 1f, whiteAlpha));
             if (blackAlpha > 0f) DrawSolid(new Color(0f, 0f, 0f, blackAlpha));
+            if (showingEnding && endingComplete) DrawEndingHints();
             GUI.color = Color.white;
+        }
+
+        void DrawEndingHints()
+        {
+            if (endingHintStyle == null)
+            {
+                endingHintStyle = new GUIStyle(GUI.skin.label)
+                {
+                    font = endingHintFont,
+                    alignment = TextAnchor.MiddleCenter,
+                    wordWrap = false
+                };
+                endingHintShadowStyle = new GUIStyle(endingHintStyle);
+                endingHintStyle.normal.textColor = new Color(.24f, .27f, .51f);
+                endingHintShadowStyle.normal.textColor = new Color(.98f, .95f, 1f, .8f);
+            }
+
+            int fontSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height * .043f), 18, 46);
+            var content = new GUIContent(EndingHint);
+            endingHintStyle.fontSize = fontSize;
+            while (fontSize > 14 && endingHintStyle.CalcSize(content).x > Screen.width - 32f)
+                endingHintStyle.fontSize = --fontSize;
+            endingHintShadowStyle.fontSize = fontSize;
+
+            float height = fontSize * 1.8f;
+            float bottomGap = Mathf.Max(14f, Screen.height * .03f);
+            var rect = new Rect(16f, Screen.height - bottomGap - height, Screen.width - 32f, height);
+            GUI.Label(new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height),
+                      content, endingHintShadowStyle);
+            GUI.Label(rect, content, endingHintStyle);
+
+            int thanksSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height * .06f), 24, 58);
+            var thanks = new GUIContent(EndingThanks);
+            endingHintStyle.fontSize = thanksSize;
+            while (thanksSize > 18 && endingHintStyle.CalcSize(thanks).x > Screen.width - 32f)
+                endingHintStyle.fontSize = --thanksSize;
+            endingHintShadowStyle.fontSize = thanksSize;
+
+            float topGap = Mathf.Max(16f, Screen.height * .035f);
+            var thanksRect = new Rect(16f, topGap, Screen.width - 32f, thanksSize * 1.8f);
+            GUI.Label(new Rect(thanksRect.x + 1.5f, thanksRect.y + 1.5f,
+                               thanksRect.width, thanksRect.height), thanks, endingHintShadowStyle);
+            GUI.Label(thanksRect, thanks, endingHintStyle);
         }
 
         float PanelOpacity(int number)

@@ -13,7 +13,7 @@ namespace SeedGame
         AudioSource music;
         AudioSource effects;
         AudioSource resonance;
-        AudioSource plantWindow;
+        readonly AudioSource[] plantWindows = new AudioSource[4];
         AudioSource openingWind;
         AudioClip[] grass;
         AudioClip[] concrete;
@@ -26,8 +26,10 @@ namespace SeedGame
         AudioClip shine;
         float nextWindAt;
         float resonanceEndsAt;
-        float plantWindowEndsAt;
-        float lastPlantAt = -10f;
+        readonly float[] plantWindowEndsAt = new float[4];
+        int nextPlantWindow;
+        readonly Dictionary<UnityEngine.Object, float> lastPlantAtBySource =
+            new Dictionary<UnityEngine.Object, float>();
         int lastGrass = -1;
         int lastConcrete = -1;
         int lastPlant = -1;
@@ -49,7 +51,8 @@ namespace SeedGame
             music = NewSource("Music", .3f);
             effects = NewSource("Effects", .65f);
             resonance = NewSource("Resonance", .24f);
-            plantWindow = NewSource("Plant growth window", .55f);
+            for (int i = 0; i < plantWindows.Length; i++)
+                plantWindows[i] = NewSource("Plant growth window " + (i + 1), .55f);
             openingWind = NewSource("Opening comic wind", 0f);
             grass = LoadNumbered("Grass", 4);
             concrete = LoadNumbered("Concrete", 3);
@@ -72,7 +75,9 @@ namespace SeedGame
         void Update()
         {
             if (resonance.isPlaying && Time.time >= resonanceEndsAt) resonance.Stop();
-            if (plantWindow.isPlaying && Time.time >= plantWindowEndsAt) plantWindow.Stop();
+            for (int i = 0; i < plantWindows.Length; i++)
+                if (plantWindows[i].isPlaying && Time.time >= plantWindowEndsAt[i])
+                    plantWindows[i].Stop();
             if (openingWind && openingWind.clip)
             {
                 float target = openingWindActive ? .14f : 0f;
@@ -126,7 +131,7 @@ namespace SeedGame
         public static void PlayEnergyRecharge()
         {
             if (instance && instance.energyRecharge)
-                instance.effects.PlayOneShot(instance.energyRecharge, .38f);
+                instance.effects.PlayOneShot(instance.energyRecharge, .20f);
         }
 
         public static void SetOpeningComicWind(bool enabled)
@@ -140,10 +145,12 @@ namespace SeedGame
             }
         }
 
-        public static void PlayPlantGrowth()
+        public static void PlayPlantGrowth(UnityEngine.Object plant)
         {
-            if (!instance || Time.time - instance.lastPlantAt < .18f) return;
-            instance.lastPlantAt = Time.time;
+            if (!instance || !plant) return;
+            if (instance.lastPlantAtBySource.TryGetValue(plant, out float lastAt) &&
+                Time.time - lastAt < .18f) return;
+            instance.lastPlantAtBySource[plant] = Time.time;
             if ((instance.plantCuts == null || instance.plantCuts.Length == 0) &&
                 instance.plantLong && instance.plantLong.loadState == AudioDataLoadState.Loaded)
                 instance.plantCuts = MakePlantCuts(instance.plantLong);
@@ -152,19 +159,21 @@ namespace SeedGame
             instance.lastPlant = index;
             if (cut)
             {
-                instance.effects.PlayOneShot(cut, .60f);
+                instance.effects.PlayOneShot(cut, .75f);
                 return;
             }
             // If an MP3 was not decompressed, still play a short timed section.
             if (!instance.plantLong) return;
             instance.plantLong.LoadAudioData();
-            instance.plantWindow.Stop();
-            instance.plantWindow.clip = instance.plantLong;
+            int channel = instance.nextPlantWindow++ % instance.plantWindows.Length;
+            var window = instance.plantWindows[channel];
+            window.Stop();
+            window.clip = instance.plantLong;
             float[] starts = { 1.0f, 6.0f, 11.0f, 17.0f };
-            instance.plantWindow.time = Mathf.Min(starts[UnityEngine.Random.Range(0, starts.Length)],
+            window.time = Mathf.Min(starts[UnityEngine.Random.Range(0, starts.Length)],
                 Mathf.Max(0f, instance.plantLong.length - .8f));
-            instance.plantWindow.Play();
-            instance.plantWindowEndsAt = Time.time + .9f;
+            window.Play();
+            instance.plantWindowEndsAt[channel] = Time.time + .9f;
         }
 
         public static void SetRebornWind(bool enabled)

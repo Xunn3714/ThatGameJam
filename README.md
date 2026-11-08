@@ -1,6 +1,6 @@
-# Seed Alpha — Windows 64-bit
+# The Winding Journey — Windows 64-bit
 
-This is the three-level Game Jam build. Extract the entire ZIP, then run `SeedAlpha.exe`. Keep `SeedAlpha_Data` and the other files beside the executable.
+This is the three-level Game Jam build. Extract the entire ZIP, then run `The Winding Journey.exe`. Keep `The Winding Journey_Data` and the other files beside the executable.
 
 ## Controls
 
@@ -10,6 +10,7 @@ This is the three-level Game Jam build. Extract the entire ZIP, then run `SeedAl
 | Space | Jump |
 | E | Resonance; press again during an active pulse to extend its range |
 | Hold Space | Glide after unlocking the leaf |
+| Esc | Exit the game |
 
 The opening and ending comics play automatically. Resonance becomes available after collecting the first gear.
 

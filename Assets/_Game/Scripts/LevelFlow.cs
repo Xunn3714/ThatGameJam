@@ -1,10 +1,17 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using System.Runtime.InteropServices;
+#endif
 
 namespace SeedGame
 {
     public sealed class LevelFlow : MonoBehaviour
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport("__Internal")]
+        static extern void ExitWebGLGame();
+#endif
         public static LevelFlow Instance { get; private set; }
         public SeedPlayer player;
         public string completionMessage = "关卡完成！按 R 重新开始";
@@ -35,6 +42,17 @@ namespace SeedGame
         }
         void Update()
         {
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+                ExitWebGLGame();
+#else
+                Application.Quit();
+#endif
+                return;
+            }
             if (!finished) return;
             bool restart = false;
             restart |= Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;

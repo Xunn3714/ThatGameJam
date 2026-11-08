@@ -5825,7 +5825,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SeedGame.SeedCamera
   target: {fileID: 1401218885}
   minX: 0
-  maxX: 47
+  maxX: 47.7
   minY: -1.6
   maxY: 12
   deadZoneX: 1.1

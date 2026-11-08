@@ -10,6 +10,10 @@ namespace SeedGame
     public sealed class ResonanceBurstVfx : MonoBehaviour
     {
         const int RingSegments = 96;
+        // The pulse checks plant roots, while vine artwork reaches past them.
+        // Keep the visible wave inside the gameplay radius so its edge does
+        // not imply that a root just beyond the range was activated.
+        const float VisualRadiusInset = .45f;
         static readonly Color InnerColor = new Color(.42f, .83f, .87f, 1f);
         static readonly Color MiddleColor = new Color(.68f, .63f, .92f, 1f);
         static readonly Color EdgeColor = new Color(1f, .79f, .28f, 1f);
@@ -28,13 +32,14 @@ namespace SeedGame
             if (targetRadius <= 0f) return;
             EnsureResources();
             if (!glowMaterial) return;
+            float visualRadius = Mathf.Max(.16f, targetRadius - VisualRadiusInset);
             float startRadius = stage > 1 ? previousRadius : .16f;
-            previousRadius = targetRadius;
+            previousRadius = visualRadius;
             StopAllCoroutines();
             foreach (var burst in activeBursts)
                 if (burst) Destroy(burst);
             activeBursts.Clear();
-            StartCoroutine(AnimateBurst(center, startRadius, targetRadius, Mathf.Clamp(stage, 1, 4)));
+            StartCoroutine(AnimateBurst(center, startRadius, visualRadius, Mathf.Clamp(stage, 1, 4)));
         }
 
         IEnumerator AnimateBurst(Vector3 center, float startRadius, float targetRadius, int stage)

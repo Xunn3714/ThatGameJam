@@ -68,7 +68,7 @@ namespace SeedGame
             HasStarted = true;
             if (landscapeMaterials.Count == 0 || leafMaterials.Count == 0) yield break;
             SetCenter(landscapeMaterials, origin);
-            GameAudio.PlayPlantGrowth();
+            GameAudio.PlayPlantGrowth(this);
             // At the far corner the circle must reach the entire 4096 x 1714 canvas.
             float radius = 1f + Mathf.Max(
                 Vector2.Distance(origin, new Vector2(-10.24f, 4.285f)),
@@ -90,7 +90,7 @@ namespace SeedGame
         {
             for (int i = 0; i < 4; i++)
             {
-                GameAudio.PlayPlantGrowth();
+                GameAudio.PlayPlantGrowth(this);
                 yield return new WaitForSeconds(leavesSeconds / 4f);
             }
         }

@@ -34,7 +34,7 @@ public static class BuildAlphaScene
             ? new [] { new EditorBuildSettingsScene(path, true), new EditorBuildSettingsScene(secondPath, true) }
             : new [] { new EditorBuildSettingsScene(path, true) };
         AssetDatabase.SaveAssets();
-        Debug.Log("Seed alpha scene built: " + path);
+        Debug.Log("Seed scene built: " + path);
     }
     static void PrepareSprite(string path, float pixelsPerUnit)
     {

@@ -19,7 +19,7 @@ namespace SeedGame
         {
             if (opened) return;
             opened = true;
-            GameAudio.PlayPlantGrowth();
+            GameAudio.PlayPlantGrowth(this);
             if (highlight) highlight.Hide();
             if (placedStages != null && placedStages.Length > 1) StartCoroutine(GrowPlaced());
             if (visual)
